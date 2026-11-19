@@ -6,7 +6,31 @@ from flask import Flask, jsonify, render_template_string, request
 
 app = Flask(__name__)
 
-MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Linear.pkl")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def find_model_path():
+    """Find Linear.pkl even if the case differs (Linux is case-sensitive),
+    or fall back to the first .pkl file found in the project folder."""
+    pkls = []
+    for root, _dirs, files in os.walk(BASE_DIR):
+        if ".venv" in root or ".git" in root:
+            continue
+        for name in files:
+            if name.lower().endswith(".pkl"):
+                pkls.append(os.path.join(root, name))
+    for p in pkls:
+        if os.path.basename(p).lower() == "linear.pkl":
+            return p
+    if pkls:
+        return pkls[0]
+    raise FileNotFoundError(
+        "No .pkl model file found in the repo. Commit Linear.pkl to GitHub "
+        "next to app.py and redeploy."
+    )
+
+
+MODEL_PATH = find_model_path()
 
 
 def load_model(path):
